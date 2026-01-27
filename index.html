@@ -51,11 +51,11 @@ let player = {
   onGround: false
 };
 
-/* ---------- LEVELS ---------- */
 let level = 0;
 
+/* ---------- LEVELS ---------- */
 const levels = [
-  // LEVEL 0 — CHOICE
+  // 0 — START / CHOICE
   {
     blocks: [
       {x:0,y:300,w:640,h:60},
@@ -64,36 +64,33 @@ const levels = [
       {x:400,y:200,w:80,h:20}
     ],
     portals: [
-      {x:520,y:260,w:20,h:40,to:1},
-      {x:520,y:200,w:20,h:40,to:2}
+      {x:520,y:260,w:20,h:40,to:1}, // fake heaven
+      {x:520,y:200,w:20,h:40,to:4}  // hell
     ]
   },
 
-  // LEVEL 1 — FAKE HEAVEN (DOOR LIES)
+  // 1 — FAKE HEAVEN HUB
   {
     blocks: [
       {x:0,y:300,w:800,h:60},
       {x:160,y:250,w:50,h:20},
       {x:260,y:210,w:50,h:20},
-      {x:360,y:170,w:50,h:20},
-      {x:520,y:260,w:40,h:20}
+      {x:360,y:170,w:50,h:20}
     ],
-    fakeDoor: {x:560,y:220,w:20,h:40},
-    exitEdge: true
+    fakeDoor: {x:480,y:220,w:20,h:40}
   },
 
-  // LEVEL 2 — HELL
+  // 2 — LEFT EDGE TRAP ROOM
   {
     blocks: [
       {x:0,y:300,w:640,h:60},
-      {x:220,y:260,w:160,h:20}
+      {x:200,y:240,w:60,h:20},
+      {x:300,y:200,w:60,h:20}
     ],
-    portals: [
-      {x:520,y:260,w:20,h:40,type:"hell"}
-    ]
+    portals: [{x:560,y:260,w:20,h:40,to:3}]
   },
 
-  // LEVEL 3 — TRUE HEAVEN OBBY
+  // 3 — PUZZLE PATH
   {
     blocks: [
       {x:0,y:300,w:640,h:60},
@@ -101,8 +98,36 @@ const levels = [
       {x:240,y:220,w:60,h:20},
       {x:340,y:180,w:60,h:20}
     ],
+    portals: [{x:420,y:160,w:20,h:40,to:6}]
+  },
+
+  // 4 — HELL
+  {
+    blocks: [
+      {x:0,y:300,w:640,h:60},
+      {x:240,y:260,w:160,h:20}
+    ],
+    portals: [{x:520,y:260,w:20,h:40,type:"hell"}]
+  },
+
+  // 5 — FALL PUNISHMENT ROOM
+  {
+    blocks: [
+      {x:0,y:300,w:640,h:60}
+    ],
+    portals: [{x:300,y:260,w:20,h:40,to:2}]
+  },
+
+  // 6 — TRUE HEAVEN OBBY
+  {
+    blocks: [
+      {x:0,y:300,w:640,h:60},
+      {x:180,y:260,w:60,h:20},
+      {x:260,y:230,w:60,h:20},
+      {x:340,y:200,w:60,h:20}
+    ],
     portals: [
-      {x:520,y:140,w:20,h:40,type:"heaven"}
+      {x:360,y:160,w:20,h:40,type:"heaven"} // reachable door
     ]
   }
 ];
@@ -121,16 +146,13 @@ function reset(){
 
 /* ---------- UPDATE ---------- */
 function update(){
-  // move
   if (keys["KeyA"]) player.x -= 2;
   if (keys["KeyD"]) player.x += 2;
 
-  // gravity
   player.vy += GRAVITY;
   player.y += player.vy;
   player.onGround = false;
 
-  // collisions
   levels[level].blocks.forEach(b=>{
     if (hit(player,b) && player.vy >= 0){
       player.y = b.y - player.h;
@@ -139,7 +161,6 @@ function update(){
     }
   });
 
-  // jump
   if (jumpRequest && player.onGround){
     player.vy = -9;
   }
@@ -150,11 +171,11 @@ function update(){
     levels[level].portals.forEach(p=>{
       if (hit(player,p)){
         if (p.type === "hell"){
-          alert("🔥 You chose the easy way. Hell claims you 🔥");
+          alert("🔥 You fell for the lie. Hell awaits 🔥");
           level = 0; reset();
         }
         else if (p.type === "heaven"){
-          alert("✨ You reached true Heaven ✨");
+          alert("✨ You found the real Heaven ✨");
           level = 0; reset();
         }
         else {
@@ -165,28 +186,24 @@ function update(){
     });
   }
 
-  // edge exit for fake heaven
-  if (levels[level].exitEdge && player.x > canvas.width - 5){
-    level = 3;
-    reset();
-  }
+  // EDGE TRANSITIONS
+  if (player.x < 0) { level = 2; reset(); }
+  if (player.x > canvas.width) { level = 3; reset(); }
+  if (player.y > canvas.height) { level = 5; reset(); }
 }
 
 /* ---------- DRAW ---------- */
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  // ghost
   ctx.fillStyle = "#ddd";
   ctx.fillRect(player.x,player.y,player.w,player.h);
 
-  // platforms
   ctx.fillStyle = "#444";
   levels[level].blocks.forEach(b=>{
     ctx.fillRect(b.x,b.y,b.w,b.h);
   });
 
-  // portals
   if (levels[level].portals){
     levels[level].portals.forEach(p=>{
       ctx.fillStyle =
@@ -197,7 +214,6 @@ function draw(){
     });
   }
 
-  // fake heaven door
   if (levels[level].fakeDoor){
     const d = levels[level].fakeDoor;
     ctx.fillStyle = "#7fffd4";
