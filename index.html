@@ -204,4 +204,53 @@ function update(){
 
   // EDGE TRANSITIONS
   if (player.x < -20) { level = 2; reset(); }
-  if (player.x > canvas.width) { level = 4; reset(
+  if (player.x > canvas.width) { level = 4; reset(); }
+  if (player.y > canvas.height) { level = 5; reset(); }
+  if (player.y < -20) { level = 3; reset(); }
+}
+
+/* ---------- DRAW ---------- */
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  ctx.fillStyle = "#ddd";
+  ctx.fillRect(player.x,player.y,player.w,player.h);
+
+  ctx.fillStyle = "#444";
+  levels[level].blocks.forEach(b=>{
+    ctx.fillRect(b.x,b.y,b.w,b.h);
+  });
+
+  if (levels[level].portals){
+    levels[level].portals.forEach(p=>{
+      ctx.fillStyle =
+        p.type==="heaven" ? "#7fffd4" :
+        p.type==="hell" ? "#ff5555" :
+        "#aaa";
+      ctx.fillRect(p.x,p.y,p.w,p.h);
+    });
+  }
+
+  if (levels[level].fakeDoor){
+    const d = levels[level].fakeDoor;
+    ctx.fillStyle = "#7fffd4";
+    ctx.fillRect(d.x,d.y,d.w,d.h);
+    ctx.fillStyle = "#fff";
+    ctx.fillText("ENTER", d.x - 10, d.y - 5);
+  }
+
+  ctx.fillStyle = "#fff";
+  ctx.fillText("A / D move   SPACE jump", 10, 20);
+}
+
+/* ---------- LOOP ---------- */
+function loop(){
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+
+</body>
+</html>
