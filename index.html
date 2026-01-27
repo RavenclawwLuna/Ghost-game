@@ -34,6 +34,7 @@ canvas.focus();
 let intro = true;
 let keys = {};
 let jumpRequest = false;
+let safeStartFrames = 0; // frames after intro to ignore portal collisions
 
 /* ---------- INPUT ---------- */
 document.addEventListener("keydown", e => {
@@ -41,19 +42,19 @@ document.addEventListener("keydown", e => {
 
   if (intro && e.code === "Space") {
     intro = false;
-    reset(); // start safely
+    safeStartFrames = 10; // ignore collisions for 10 frames
+    reset();
   }
 
   if (e.code === "Space") jumpRequest = true;
 });
-
 document.addEventListener("keyup", e => keys[e.code] = false);
 
 /* ---------- PLAYER ---------- */
 const GRAVITY = 0.5;
 
 let player = {
-  x: 60, // safe start position away from portals
+  x: 80, // safe start position away from portals
   y: 260,
   w: 16, h: 16,
   vy: 0,
@@ -73,7 +74,7 @@ const levels = [
     ],
     portals: [
       {x:520,y:260,w:20,h:40,to:2}, // fake heaven
-      {x:40,y:260,w:20,h:40,type:"hell"} // hell door on left edge
+      {x:20,y:260,w:20,h:40,type:"hell"} // left edge hell
     ]
   },
 
@@ -155,7 +156,7 @@ function hit(a,b){
 }
 
 function reset(){
-  player.x = 60; // safe start
+  player.x = 80; // safe start
   player.y = 260;
   player.vy = 0;
   player.onGround = false;
@@ -184,6 +185,12 @@ function update(){
     player.vy = -9;
   }
   jumpRequest = false;
+
+  // reduce safe frames counter
+  if (safeStartFrames > 0){
+    safeStartFrames--;
+    return; // skip collisions
+  }
 
   if (levels[level].portals){
     levels[level].portals.forEach(p=>{
