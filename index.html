@@ -10,7 +10,6 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
-      image-rendering: pixelated;
       overflow: hidden;
       font-family: monospace;
     }
@@ -30,28 +29,253 @@ const ctx = canvas.getContext("2d");
 canvas.focus();
 
 /* ---------- GAME STATE ---------- */
-let intro = true;
+let state = "intro"; // intro, play, heaven, hell, human
 let keys = {};
 let jumpRequest = false;
-let safeStartFrames = 0; // skip portal collisions for a few frames
-let ending = null; // "heaven" | "hell" | null
+let safeFrames = 0;
 
 /* ---------- INPUT ---------- */
 document.addEventListener("keydown", e => {
   keys[e.code] = true;
 
-  if (intro && e.code === "Space") {
-    intro = false;
-    safeStartFrames = 10;
+  if (state === "intro" && e.code === "Space") {
+    state = "play";
+    safeFrames = 10;
     reset();
-  }
-
-  if (ending && e.code === "Space") {
-    ending = null;
-    intro = true;
   }
 
   if (e.code === "Space") jumpRequest = true;
 });
 
-document.addEventListener("keyup", e
+document.addEventListener("keyup", e => keys[e.code] = false);
+
+/* ---------- PLAYER ---------- */
+const GRAVITY = 0.5;
+let player = { x: 80, y: 260, w: 16, h: 16, vy: 0, onGround: false };
+let level = 0;
+
+/* ---------- LEVELS ---------- */
+const levels = [
+  // 0 START
+  {
+    blocks: [
+      {x:0,y:300,w:640,h:60},
+      {x:180,y:260,w:80,h:20},
+      {x:300,y:230,w:80,h:20}
+    ],
+    portals: [
+      {x:520,y:260,w:20,h:40,type:"hell"},
+      {x:40,y:260,w:20,h:40,to:2}
+    ]
+  },
+  // 2 FAKE HEAVEN
+  {
+    blocks:[
+      {x:0,y:300,w:640,h:60},
+      {x:200,y:250,w:60,h:20},
+      {x:300,y:210,w:60,h:20}
+    ],
+    portals:[
+      {x:460,y:260,w:20,h:40,type:"hell"}
+    ]
+  },
+  // 3 SECRET UP PATH (Human Realm)
+  {
+    blocks:[
+      {x:0,y:300,w:640,h:60},
+      {x:260,y:260,w:60,h:20}
+    ],
+    portals:[
+      {x:320,y:180,w:20,h:40,type:"human"} // Upward secret
+    ]
+  },
+  // 4 HELL ROOM
+  {
+    blocks:[
+      {x:0,y:300,w:640,h:60},
+      {x:240,y:260,w:160,h:20}
+    ],
+    portals:[
+      {x:520,y:260,w:20,h:40,type:"hell"}
+    ]
+  },
+  // 5 PIT TRAP
+  {
+    blocks:[
+      {x:0,y:300,w:640,h:60}
+    ],
+    portals:[
+      {x:300,y:260,w:20,h:40,to:4}
+    ]
+  },
+  // 6 HELL MAZE
+  {
+    blocks:[
+      {x:0,y:300,w:640,h:60},
+      {x:100,y:260,w:80,h:20},
+      {x:260,y:220,w:80,h:20},
+      {x:420,y:180,w:80,h:20}
+    ],
+    portals:[
+      {x:560,y:140,w:20,h:40,to:7},
+      {x:40,y:260,w:20,h:40,type:"hell"}
+    ]
+  },
+  // 7 TRUE HEAVEN
+  {
+    blocks:[
+      {x:0,y:300,w:640,h:60},
+      {x:240,y:260,w:80,h:20},
+      {x:320,y:230,w:80,h:20}
+    ],
+    portals:[
+      {x:340,y:190,w:20,h:40,type:"heaven"} // single true heaven
+    ]
+  }
+];
+
+/* ---------- HELPERS ---------- */
+function hit(a,b){
+  return a.x < b.x+b.w && a.x+a.w > b.x &&
+         a.y < b.y+b.h && a.y+a.h > b.y;
+}
+
+function reset(){
+  player.x = 80;
+  player.y = 260;
+  player.vy = 0;
+  player.onGround = false;
+}
+
+/* ---------- UPDATE ---------- */
+function update(){
+  if(state==="intro" || state==="heaven" || state==="hell" || state==="human") return;
+
+  if(keys["KeyA"]) player.x -= 2;
+  if(keys["KeyD"]) player.x += 2;
+
+  player.vy += GRAVITY;
+  player.y += player.vy;
+  player.onGround = false;
+
+  levels[level].blocks.forEach(b=>{
+    if(hit(player,b) && player.vy>=0){
+      player.y = b.y - player.h;
+      player.vy = 0;
+      player.onGround = true;
+    }
+  });
+
+  if(jumpRequest && player.onGround) player.vy = -9;
+  jumpRequest=false;
+
+  if(safeFrames>0){
+    safeFrames--;
+    return; // skip portal collision
+  }
+
+  if(levels[level].portals){
+    levels[level].portals.forEach(p=>{
+      if(hit(player,p)){
+        if(p.type==="hell"){ state="hell"; return; }
+        if(p.type==="heaven"){ state="heaven"; return; }
+        if(p.type==="human"){ state="human"; return; }
+        if(p.to!==undefined){ level=p.to; reset(); }
+      }
+    });
+  }
+
+  // EDGE TRANSITIONS
+  if(player.x<-20){ level=3; reset(); } // secret up path
+  if(player.x>canvas.width){ level=6; reset(); }
+  if(player.y>canvas.height){ level=5; reset(); }
+  if(player.y<-20){ level=3; reset(); }
+}
+
+/* ---------- DRAW ---------- */
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // Intro
+  if(state==="intro"){
+    ctx.fillStyle="#fff";
+    ctx.textAlign="center";
+    ctx.font="16px monospace";
+    ctx.fillText("You are a ghost.",320,120);
+    ctx.fillText("Your soul must find the true Heaven.",320,150);
+    ctx.fillText("Paths can mislead. Wrong choices = Hell.",320,180);
+    ctx.fillText("A / D move, SPACE jump",320,210);
+    ctx.fillText("Press SPACE to begin",320,260);
+    return;
+  }
+
+  // Heaven Ending
+  if(state==="heaven"){
+    ctx.fillStyle="white";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle="#000";
+    ctx.textAlign="center";
+    ctx.font="24px monospace";
+    ctx.fillText("✨ Heaven ✨",320,150);
+    ctx.font="16px monospace";
+    ctx.fillText("You found the true Heaven.",320,180);
+    ctx.fillText("Three possible endings: Heaven, Hell, Human Realm",320,210);
+    return;
+  }
+
+  // Hell Ending
+  if(state==="hell"){
+    ctx.fillStyle="#ff4444";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle="#000";
+    ctx.textAlign="center";
+    ctx.font="24px monospace";
+    ctx.fillText("🔥 Hell 🔥",320,150);
+    ctx.font="16px monospace";
+    ctx.fillText("You were misled and judged.",320,180);
+    ctx.fillText("Three possible endings: Heaven, Hell, Human Realm",320,210);
+    return;
+  }
+
+  // Human Realm Secret Ending
+  if(state==="human"){
+    ctx.fillStyle="#3399ff";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle="#fff";
+    ctx.textAlign="center";
+    ctx.font="24px monospace";
+    ctx.fillText("🌌 Human Realm 🌌",320,150);
+    ctx.font="16px monospace";
+    ctx.fillText("You returned to the human world.",320,180);
+    ctx.fillText("Three possible endings: Heaven, Hell, Human Realm",320,210);
+    return;
+  }
+
+  // PLAYING GAME
+  ctx.fillStyle="#ddd";
+  ctx.fillRect(player.x,player.y,player.w,player.h);
+  ctx.fillStyle="#444";
+  levels[level].blocks.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
+  if(levels[level].portals){
+    levels[level].portals.forEach(p=>{
+      ctx.fillStyle=p.type==="heaven"? "#7fffd4": p.type==="hell"? "#ff4444": p.type==="aaa";
+      ctx.fillRect(p.x,p.y,p.w,p.h);
+    });
+  }
+
+  ctx.fillStyle="#fff";
+  ctx.font="12px monospace";
+  ctx.fillText("A / D move, SPACE jump",10,20);
+}
+
+/* ---------- LOOP ---------- */
+function loop(){
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+
+</body>
+</html>
