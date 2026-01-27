@@ -30,35 +30,41 @@ const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 canvas.focus();
 
-/* ---------------- INPUT ---------------- */
+/* ---------- GAME STATE ---------- */
+let intro = true;
 let keys = {};
-let jump = false;
+let jumpRequest = false;
 
+/* ---------- INPUT ---------- */
 document.addEventListener("keydown", e => {
   keys[e.code] = true;
-  if (e.code === "Space") {
-    jump = true;
-    e.preventDefault();
+
+  if (intro && e.code === "Space") {
+    intro = false;
+    reset(); // start safely
   }
+
+  if (e.code === "Space") jumpRequest = true;
 });
+
 document.addEventListener("keyup", e => keys[e.code] = false);
 
-/* ---------------- PLAYER ---------------- */
+/* ---------- PLAYER ---------- */
 const GRAVITY = 0.5;
 
 let player = {
-  x: 40, y: 260,
+  x: 60, // safe start position away from portals
+  y: 260,
   w: 16, h: 16,
   vy: 0,
   onGround: false
 };
 
 let level = 0;
-let intro = true;
 
-/* ---------------- LEVELS ---------------- */
+/* ---------- LEVELS ---------- */
 const levels = [
-  // 0 — INTRO / START (hidden paths)
+  // 0 — START
   {
     blocks: [
       {x:0,y:300,w:640,h:60},
@@ -67,14 +73,11 @@ const levels = [
     ],
     portals: [
       {x:520,y:260,w:20,h:40,to:2}, // fake heaven
-      {x:40,y:260,w:20,h:40,to:4,type:"hell"}
+      {x:40,y:260,w:20,h:40,type:"hell"} // hell door on left edge
     ]
   },
 
-  // 1 — UNUSED BUFFER
-  { blocks:[{x:0,y:300,w:640,h:60}] },
-
-  // 2 — FALSE HEAVEN ROOM
+  // 2 — FAKE HEAVEN
   {
     blocks:[
       {x:0,y:300,w:640,h:60},
@@ -97,7 +100,7 @@ const levels = [
     ]
   },
 
-  // 4 — HELL ROOM A
+  // 4 — HELL ROOM
   {
     blocks:[
       {x:0,y:300,w:640,h:60},
@@ -140,24 +143,25 @@ const levels = [
       {x:320,y:230,w:80,h:20}
     ],
     portals:[
-      {x:340,y:190,w:20,h:40,type:"heaven"}
+      {x:340,y:190,w:20,h:40,type:"heaven"} // reachable door
     ]
   }
 ];
 
-/* ---------------- HELPERS ---------------- */
+/* ---------- HELPERS ---------- */
 function hit(a,b){
   return a.x < b.x+b.w && a.x+a.w > b.x &&
          a.y < b.y+b.h && a.y+a.h > b.y;
 }
 
 function reset(){
-  player.x = 40;
+  player.x = 60; // safe start
   player.y = 260;
   player.vy = 0;
+  player.onGround = false;
 }
 
-/* ---------------- UPDATE ---------------- */
+/* ---------- UPDATE ---------- */
 function update(){
   if (intro) return;
 
@@ -176,23 +180,25 @@ function update(){
     }
   });
 
-  if (jump && player.onGround){
+  if (jumpRequest && player.onGround){
     player.vy = -9;
   }
-  jump = false;
+  jumpRequest = false;
 
   if (levels[level].portals){
     levels[level].portals.forEach(p=>{
       if (hit(player,p)){
-        if (p.type === "hell"){
+        if (p.type==="hell"){
           alert("🔥 You were judged. Hell 🔥");
-          level = 0; reset(); intro = true;
-        }
-        else if (p.type === "heaven"){
+          level = 0;
+          intro = true;
+          reset();
+        } else if (p.type==="heaven"){
           alert("✨ Heaven ✨");
-          level = 0; reset(); intro = true;
-        }
-        else {
+          level = 0;
+          intro = true;
+          reset();
+        } else {
           level = p.to;
           reset();
         }
@@ -200,12 +206,14 @@ function update(){
     });
   }
 
-  if (player.x < 0) { level = 3; reset(); }
+  // EDGE TRANSITIONS
+  if (player.x < -20) { level = 3; reset(); }
   if (player.x > canvas.width) { level = 6; reset(); }
   if (player.y > canvas.height) { level = 5; reset(); }
+  if (player.y < -20) { level = 3; reset(); }
 }
 
-/* ---------------- DRAW ---------------- */
+/* ---------- DRAW ---------- */
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
@@ -213,23 +221,20 @@ function draw(){
     ctx.fillStyle = "#fff";
     ctx.textAlign = "center";
     ctx.font = "16px monospace";
-    ctx.fillText("You died.", 320, 120);
+    ctx.fillText("You are a ghost.", 320, 120);
     ctx.fillText("Your soul must find the true Heaven.", 320, 150);
-    ctx.fillText("Most paths lie.", 320, 180);
-    ctx.fillText("A / D to move — SPACE to jump", 320, 220);
+    ctx.fillText("Most paths lie. Wrong choices lead to Hell.", 320, 180);
+    ctx.fillText("A / D to move — SPACE to jump", 320, 210);
     ctx.fillText("Press SPACE to begin", 320, 260);
     return;
   }
 
   ctx.textAlign = "left";
-
   ctx.fillStyle = "#ddd";
   ctx.fillRect(player.x,player.y,player.w,player.h);
 
   ctx.fillStyle = "#444";
-  levels[level].blocks.forEach(b=>{
-    ctx.fillRect(b.x,b.y,b.w,b.h);
-  });
+  levels[level].blocks.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
 
   if (levels[level].portals){
     levels[level].portals.forEach(p=>{
@@ -242,20 +247,12 @@ function draw(){
   }
 }
 
-/* ---------------- LOOP ---------------- */
+/* ---------- LOOP ---------- */
 function loop(){
   update();
   draw();
   requestAnimationFrame(loop);
 }
-
-document.addEventListener("keydown", e=>{
-  if (intro && e.code === "Space"){
-    intro = false;
-    reset();
-  }
-});
-
 loop();
 </script>
 
