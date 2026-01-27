@@ -55,17 +55,18 @@ let level = 0;
 
 /* ---------- LEVELS ---------- */
 const levels = [
-  // 0 — START / CHOICE
+  // 0 — START (HIDDEN ROOMS EXIST)
   {
     blocks: [
       {x:0,y:300,w:640,h:60},
-      {x:120,y:260,w:80,h:20},
-      {x:260,y:230,w:80,h:20},
-      {x:400,y:200,w:80,h:20}
+      {x:140,y:260,w:80,h:20},
+      {x:280,y:230,w:80,h:20},
+      {x:420,y:200,w:80,h:20},
+      {x:-40,y:200,w:40,h:160}, // hidden left wall
+      {x:200,y:100,w:80,h:20}   // secret ceiling jump
     ],
     portals: [
-      {x:520,y:260,w:20,h:40,to:1}, // fake heaven
-      {x:520,y:200,w:20,h:40,to:4}  // hell
+      {x:540,y:260,w:20,h:40,to:1} // fake heaven hub
     ]
   },
 
@@ -80,45 +81,62 @@ const levels = [
     fakeDoor: {x:480,y:220,w:20,h:40}
   },
 
-  // 2 — LEFT EDGE TRAP ROOM
+  // 2 — HIDDEN START ROOM (LEFT WALL)
   {
     blocks: [
       {x:0,y:300,w:640,h:60},
-      {x:200,y:240,w:60,h:20},
-      {x:300,y:200,w:60,h:20}
+      {x:200,y:240,w:80,h:20}
     ],
-    portals: [{x:560,y:260,w:20,h:40,to:3}]
+    portals: [{x:520,y:260,w:20,h:40,to:7}]
   },
 
-  // 3 — PUZZLE PATH
+  // 3 — SECRET CEILING ROOM
   {
     blocks: [
       {x:0,y:300,w:640,h:60},
-      {x:140,y:260,w:60,h:20},
-      {x:240,y:220,w:60,h:20},
-      {x:340,y:180,w:60,h:20}
+      {x:300,y:220,w:60,h:20}
     ],
-    portals: [{x:420,y:160,w:20,h:40,to:6}]
+    portals: [{x:520,y:260,w:20,h:40,to:6}]
   },
 
-  // 4 — HELL
+  // 4 — SPIKE TRAP ROOM (HELL)
   {
     blocks: [
       {x:0,y:300,w:640,h:60},
-      {x:240,y:260,w:160,h:20}
+      {x:180,y:260,w:40,h:20},
+      {x:260,y:260,w:40,h:20},
+      {x:340,y:260,w:40,h:20}
     ],
     portals: [{x:520,y:260,w:20,h:40,type:"hell"}]
   },
 
-  // 5 — FALL PUNISHMENT ROOM
+  // 5 — FALL PUNISHMENT
   {
-    blocks: [
-      {x:0,y:300,w:640,h:60}
-    ],
-    portals: [{x:300,y:260,w:20,h:40,to:2}]
+    blocks: [{x:0,y:300,w:640,h:60}],
+    portals: [{x:300,y:260,w:20,h:40,to:4}]
   },
 
-  // 6 — TRUE HEAVEN OBBY
+  // 6 — FALSE PUZZLE (LEADS TO HELL)
+  {
+    blocks: [
+      {x:0,y:300,w:640,h:60},
+      {x:150,y:260,w:60,h:20},
+      {x:240,y:260,w:60,h:20},
+      {x:330,y:260,w:60,h:20}
+    ],
+    portals: [{x:520,y:260,w:20,h:40,type:"hell"}]
+  },
+
+  // 7 — MISLEADING SAFE ROOM
+  {
+    blocks: [
+      {x:0,y:300,w:640,h:60},
+      {x:240,y:230,w:80,h:20}
+    ],
+    portals: [{x:520,y:260,w:20,h:40,to:8}]
+  },
+
+  // 8 — TRUE HEAVEN OBBY
   {
     blocks: [
       {x:0,y:300,w:640,h:60},
@@ -126,9 +144,7 @@ const levels = [
       {x:260,y:230,w:60,h:20},
       {x:340,y:200,w:60,h:20}
     ],
-    portals: [
-      {x:360,y:160,w:20,h:40,type:"heaven"} // reachable door
-    ]
+    portals: [{x:360,y:160,w:20,h:40,type:"heaven"}]
   }
 ];
 
@@ -171,7 +187,7 @@ function update(){
     levels[level].portals.forEach(p=>{
       if (hit(player,p)){
         if (p.type === "hell"){
-          alert("🔥 You fell for the lie. Hell awaits 🔥");
+          alert("🔥 You were misled. Hell awaits 🔥");
           level = 0; reset();
         }
         else if (p.type === "heaven"){
@@ -187,53 +203,5 @@ function update(){
   }
 
   // EDGE TRANSITIONS
-  if (player.x < 0) { level = 2; reset(); }
-  if (player.x > canvas.width) { level = 3; reset(); }
-  if (player.y > canvas.height) { level = 5; reset(); }
-}
-
-/* ---------- DRAW ---------- */
-function draw(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  ctx.fillStyle = "#ddd";
-  ctx.fillRect(player.x,player.y,player.w,player.h);
-
-  ctx.fillStyle = "#444";
-  levels[level].blocks.forEach(b=>{
-    ctx.fillRect(b.x,b.y,b.w,b.h);
-  });
-
-  if (levels[level].portals){
-    levels[level].portals.forEach(p=>{
-      ctx.fillStyle =
-        p.type==="heaven" ? "#7fffd4" :
-        p.type==="hell" ? "#ff5555" :
-        "#aaa";
-      ctx.fillRect(p.x,p.y,p.w,p.h);
-    });
-  }
-
-  if (levels[level].fakeDoor){
-    const d = levels[level].fakeDoor;
-    ctx.fillStyle = "#7fffd4";
-    ctx.fillRect(d.x,d.y,d.w,d.h);
-    ctx.fillStyle = "#fff";
-    ctx.fillText("ENTER", d.x - 10, d.y - 5);
-  }
-
-  ctx.fillStyle = "#fff";
-  ctx.fillText("A / D move   SPACE jump", 10, 20);
-}
-
-/* ---------- LOOP ---------- */
-function loop(){
-  update();
-  draw();
-  requestAnimationFrame(loop);
-}
-loop();
-</script>
-
-</body>
-</html>
+  if (player.x < -20) { level = 2; reset(); }
+  if (player.x > canvas.width) { level = 4; reset(
