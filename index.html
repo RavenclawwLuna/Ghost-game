@@ -26,21 +26,27 @@
 const c = document.getElementById("game");
 const ctx = c.getContext("2d");
 
-let k = {};
-document.addEventListener("keydown", e => k[e.key] = true);
-document.addEventListener("keyup", e => k[e.key] = false);
+let keys = {};
+let jumpRequest = false;
 
-const g = 0.5;
+document.addEventListener("keydown", e => {
+  keys[e.key] = true;
+  if (e.key === "w") jumpRequest = true;
+});
 
-let p = {
+document.addEventListener("keyup", e => keys[e.key] = false);
+
+const gravity = 0.5;
+
+let player = {
   x: 40, y: 260, w: 16, h: 16,
-  vy: 0, onG: false
+  vy: 0, onGround: false
 };
 
-let lvl = 0;
+let level = 0;
 
 const levels = [
-  // LEVEL 0 — INTRO + CHOICE
+  // LEVEL 0 — MULTIPLE PATHS
   {
     blocks: [
       {x:0,y:300,w:640,h:60},
@@ -49,29 +55,29 @@ const levels = [
       {x:400,y:200,w:80,h:20}
     ],
     portals: [
-      {x:520,y:260,w:20,h:40,to:1}, // upper path
-      {x:520,y:220,w:20,h:40,to:2}  // lower path
+      {x:520,y:260,w:20,h:40,to:1},
+      {x:520,y:200,w:20,h:40,to:2}
     ]
   },
 
-  // LEVEL 1 — HARD BUT HEAVEN
+  // LEVEL 1 — HARD → HEAVEN
   {
     blocks: [
       {x:0,y:300,w:640,h:60},
-      {x:140,y:260,w:60,h:20},
-      {x:260,y:220,w:60,h:20},
-      {x:380,y:180,w:60,h:20}
+      {x:160,y:250,w:50,h:20},
+      {x:260,y:210,w:50,h:20},
+      {x:360,y:170,w:50,h:20}
     ],
     portals: [
-      {x:520,y:160,w:20,h:40,type:"heaven"}
+      {x:520,y:150,w:20,h:40,type:"heaven"}
     ]
   },
 
-  // LEVEL 2 — EASY BUT HELL
+  // LEVEL 2 — EASY → HELL
   {
     blocks: [
       {x:0,y:300,w:640,h:60},
-      {x:200,y:260,w:120,h:20}
+      {x:220,y:260,w:160,h:20}
     ],
     portals: [
       {x:520,y:260,w:20,h:40,type:"hell"}
@@ -79,40 +85,94 @@ const levels = [
   }
 ];
 
-function hit(a,b){
+function collide(a,b){
   return a.x < b.x+b.w && a.x+a.w > b.x &&
          a.y < b.y+b.h && a.y+a.h > b.y;
 }
 
 function reset(){
-  p.x = 40;
-  p.y = 260;
-  p.vy = 0;
+  player.x = 40;
+  player.y = 260;
+  player.vy = 0;
 }
 
 function update(){
-  // movement
-  if(k["a"]) p.x -= 2;
-  if(k["d"]) p.x += 2;
+  // horizontal movement
+  if (keys["a"]) player.x -= 2;
+  if (keys["d"]) player.x += 2;
 
   // gravity
-  p.vy += g;
-  p.y += p.vy;
-  p.onG = false;
+  player.vy += gravity;
+  player.y += player.vy;
+  player.onGround = false;
 
-  // collision
-  levels[lvl].blocks.forEach(b=>{
-    if(hit(p,b) && p.vy >= 0){
-      p.y = b.y - p.h;
-      p.vy = 0;
-      p.onG = true;
+  // collisions
+  levels[level].blocks.forEach(b => {
+    if (collide(player, b) && player.vy >= 0) {
+      player.y = b.y - player.h;
+      player.vy = 0;
+      player.onGround = true;
     }
   });
 
-  // jump (AFTER collision = FIX)
-  if(k["w"] && p.onG){
-    p.vy = -8;
+  // jump (THIS IS THE FIX)
+  if (jumpRequest && player.onGround) {
+    player.vy = -8;
   }
+  jumpRequest = false;
 
   // portals
-  levels[lvl].portals.forEach(o=>{
+  levels[level].portals.forEach(p => {
+    if (collide(player, p)) {
+      if (p.type === "heaven") {
+        alert("✨ You endured the climb. Heaven awaits ✨");
+        level = 0; reset();
+      }
+      else if (p.type === "hell") {
+        alert("🔥 You took the easy way. Hell claims you 🔥");
+        level = 0; reset();
+      }
+      else {
+        level = p.to;
+        reset();
+      }
+    }
+  });
+}
+
+function draw(){
+  ctx.clearRect(0,0,c.width,c.height);
+
+  // ghost
+  ctx.fillStyle = "#ddd";
+  ctx.fillRect(player.x,player.y,player.w,player.h);
+
+  // platforms
+  ctx.fillStyle = "#444";
+  levels[level].blocks.forEach(b=>{
+    ctx.fillRect(b.x,b.y,b.w,b.h);
+  });
+
+  // portals
+  levels[level].portals.forEach(p=>{
+    ctx.fillStyle =
+      p.type==="heaven" ? "#7fffd4" :
+      p.type==="hell" ? "#ff5555" :
+      "#aaa";
+    ctx.fillRect(p.x,p.y,p.w,p.h);
+  });
+
+  ctx.fillStyle = "#fff";
+  ctx.fillText("A/D move   W jump", 10, 20);
+}
+
+function loop(){
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+
+</body>
+</html>
