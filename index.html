@@ -29,7 +29,7 @@ const ctx = canvas.getContext("2d");
 canvas.focus();
 
 /* ---------- GAME STATE ---------- */
-let state = "intro"; // intro, play, heaven, hell, human
+let state = "intro"; // "intro", "play", "heaven", "hell", "human"
 let keys = {};
 let jumpRequest = false;
 let safeFrames = 0;
@@ -40,13 +40,12 @@ document.addEventListener("keydown", e => {
 
   if (state === "intro" && e.code === "Space") {
     state = "play";
-    safeFrames = 10;
+    safeFrames = 10; // ignore portal collisions first few frames
     reset();
   }
 
   if (e.code === "Space") jumpRequest = true;
 });
-
 document.addEventListener("keyup", e => keys[e.code] = false);
 
 /* ---------- PLAYER ---------- */
@@ -86,7 +85,7 @@ const levels = [
       {x:260,y:260,w:60,h:20}
     ],
     portals:[
-      {x:320,y:180,w:20,h:40,type:"human"} // Upward secret
+      {x:320,y:180,w:20,h:40,type:"human"} // upward secret
     ]
   },
   // 4 HELL ROOM
@@ -129,7 +128,7 @@ const levels = [
       {x:320,y:230,w:80,h:20}
     ],
     portals:[
-      {x:340,y:190,w:20,h:40,type:"heaven"} // single true heaven
+      {x:340,y:190,w:20,h:40,type:"heaven"} // reachable door
     ]
   }
 ];
@@ -149,6 +148,7 @@ function reset(){
 
 /* ---------- UPDATE ---------- */
 function update(){
+  // Don't update physics in endings or intro
   if(state==="intro" || state==="heaven" || state==="hell" || state==="human") return;
 
   if(keys["KeyA"]) player.x -= 2;
@@ -166,21 +166,21 @@ function update(){
     }
   });
 
-  if(jumpRequest && player.onGround) player.vy = -9;
+  if(jumpRequest && player.onGround) player.vy=-9;
   jumpRequest=false;
 
   if(safeFrames>0){
     safeFrames--;
-    return; // skip portal collision
+    return;
   }
 
   if(levels[level].portals){
     levels[level].portals.forEach(p=>{
       if(hit(player,p)){
-        if(p.type==="hell"){ state="hell"; return; }
-        if(p.type==="heaven"){ state="heaven"; return; }
-        if(p.type==="human"){ state="human"; return; }
-        if(p.to!==undefined){ level=p.to; reset(); }
+        if(p.type==="hell"){ state="hell"; }
+        else if(p.type==="heaven"){ state="heaven"; }
+        else if(p.type==="human"){ state="human"; }
+        else if(p.to!==undefined){ level=p.to; reset(); }
       }
     });
   }
@@ -196,7 +196,7 @@ function update(){
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  // Intro
+  // Intro screen
   if(state==="intro"){
     ctx.fillStyle="#fff";
     ctx.textAlign="center";
@@ -209,7 +209,7 @@ function draw(){
     return;
   }
 
-  // Heaven Ending
+  // Heaven ending
   if(state==="heaven"){
     ctx.fillStyle="white";
     ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -223,7 +223,7 @@ function draw(){
     return;
   }
 
-  // Hell Ending
+  // Hell ending
   if(state==="hell"){
     ctx.fillStyle="#ff4444";
     ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -237,7 +237,7 @@ function draw(){
     return;
   }
 
-  // Human Realm Secret Ending
+  // Human Realm ending
   if(state==="human"){
     ctx.fillStyle="#3399ff";
     ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -251,14 +251,16 @@ function draw(){
     return;
   }
 
-  // PLAYING GAME
+  // Playing game
   ctx.fillStyle="#ddd";
   ctx.fillRect(player.x,player.y,player.w,player.h);
+
   ctx.fillStyle="#444";
   levels[level].blocks.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
+
   if(levels[level].portals){
     levels[level].portals.forEach(p=>{
-      ctx.fillStyle=p.type==="heaven"? "#7fffd4": p.type==="hell"? "#ff4444": p.type==="aaa";
+      ctx.fillStyle=p.type==="heaven"?"#7fffd4":p.type==="hell"?"#ff4444":"#aaa";
       ctx.fillRect(p.x,p.y,p.w,p.h);
     });
   }
