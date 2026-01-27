@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ghost Obby</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0b0b14;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      image-rendering: pixelated;
+    }
+    canvas {
+      border: 4px solid #fff;
+      background: #111;
+    }
+  </style>
+</head>
+<body>
+<canvas id="game" width="640" height="360"></canvas>
+
+<script>
+const c = document.getElementById("game");
+const ctx = c.getContext("2d");
+
+const g = 0.5;
+let k = {};
+
+document.addEventListener("keydown", e => k[e.key] = true);
+document.addEventListener("keyup", e => k[e.key] = false);
+
+let p = { x: 50, y: 250, w: 16, h: 16, vy: 0, onG: false };
+
+let lvl = 0;
+
+const levels = [
+  {
+    blocks: [
+      {x:0,y:300,w:640,h:60},
+      {x:150,y:260,w:80,h:20},
+      {x:300,y:220,w:80,h:20}
+    ],
+    portals: [
+      {x:500,y:260,w:20,h:40,type:"choice"}
+    ]
+  },
+  {
+    blocks: [
+      {x:0,y:300,w:640,h:60},
+      {x:200,y:260,w:80,h:20},
+      {x:350,y:230,w:80,h:20}
+    ],
+    portals: [
+      {x:520,y:260,w:20,h:40,type:"heaven"}
+    ]
+  },
+  {
+    blocks: [
+      {x:0,y:300,w:640,h:60},
+      {x:250,y:260,w:80,h:20}
+    ],
+    portals: [
+      {x:520,y:260,w:20,h:40,type:"hell"}
+    ]
+  }
+];
+
+function r(a,b){
+  return a.x < b.x+b.w && a.x+a.w > b.x &&
+         a.y < b.y+b.h && a.y+a.h > b.y;
+}
+
+function update(){
+  p.vy += g;
+  p.y += p.vy;
+  p.onG = false;
+
+  if(k["a"]) p.x -= 2;
+  if(k["d"]) p.x += 2;
+  if(k["w"] && p.onG){ p.vy = -8; }
+
+  levels[lvl].blocks.forEach(b=>{
+    if(r(p,b)){
+      p.y = b.y - p.h;
+      p.vy = 0;
+      p.onG = true;
+    }
+  });
+
+  levels[lvl].portals.forEach(o=>{
+    if(r(p,o)){
+      if(o.type === "choice"){
+        lvl = Math.random() < 0.5 ? 1 : 2;
+        reset();
+      }
+      if(o.type === "heaven"){
+        alert("✨ You ascend to Heaven ✨");
+        lvl = 0;
+        reset();
+      }
+      if(o.type === "hell"){
+        alert("🔥 You fall into Hell 🔥");
+        lvl = 0;
+        reset();
+      }
+    }
+  });
+}
+
+function reset(){
+  p.x = 50;
+  p.y = 250;
+  p.vy = 0;
+}
+
+function draw(){
+  ctx.clearRect(0,0,c.width,c.height);
+
+  // ghost
+  ctx.fillStyle = "#ddd";
+  ctx.fillRect(p.x,p.y,p.w,p.h);
+
+  // blocks
+  ctx.fillStyle = "#444";
+  levels[lvl].blocks.forEach(b=>{
+    ctx.fillRect(b.x,b.y,b.w,b.h);
+  });
+
+  // portals
+  levels[lvl].portals.forEach(o=>{
+    ctx.fillStyle =
+      o.type==="heaven" ? "#7fffd4" :
+      o.type==="hell" ? "#ff5555" : "#aaa";
+    ctx.fillRect(o.x,o.y,o.w,o.h);
+  });
+
+  ctx.fillStyle = "#fff";
+  ctx.fillText("A/D move  W jump", 10, 20);
+}
+
+function loop(){
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
