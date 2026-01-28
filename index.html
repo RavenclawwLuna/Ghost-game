@@ -42,46 +42,51 @@ let level = 0;
 
 function clamp(n,a,b){ return Math.max(a, Math.min(b,n)); }
 function hit(a,b){ return(a.x<a.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y); }
-
-function respawnHere(){ player.x = respawn.x; player.y = respawn.y; player.vy = 0; player.onGround = false; }
+function respawnHere(){ player.x=respawn.x; player.y=respawn.y; player.vy=0; player.onGround=false; }
 function resetToLevel(lv){ 
-    level = lv; 
-    const r = levels[lv].respawn; 
-    player.x = r.x; player.y = r.y; player.vy = 0; player.onGround = false; 
-    respawn.x = player.x; respawn.y = player.y; 
+    level=lv;
+    const r = levels[lv].respawn;
+    player.x=r.x; player.y=r.y; player.vy=0; player.onGround=false;
+    respawn.x=player.x; respawn.y=player.y;
 }
 
 const levels = [
     // Level 0 - Start
-    {respawn:{x:40,y:260}, blocks:[{x:0,y:300,w:640,h:60},{x:120,y:270,w:90,h:16},{x:250,y:250,w:90,h:16},{x:380,y:230,w:90,h:16}],
-     voids:[{x:210,y:300,w:80,h:60}], spikes:[{x:310,y:292,w:30,h:8}],
-     blobs:[{x:70,y:284,w:16,h:16,color:"#ff6ad5",a:1,b:2,q:"Go left or right?",c1:"Left",c2:"Right"}],
-     portals:[], edges:{left:2,right:1,top:14,bottom:15}},
+    {respawn:{x:40,y:260}, blocks:[
+        {x:0,y:300,w:640,h:60},{x:120,y:270,w:90,h:16},{x:250,y:250,w:90,h:16},{x:380,y:230,w:90,h:16}
+    ],
+    voids:[{x:210,y:300,w:80,h:60}], spikes:[{x:310,y:292,w:30,h:8}],
+    blobs:[{x:70,y:284,w:16,h:16,color:"#ff6ad5",a:1,b:2,q:"Go left or right?",c1:"Left",c2:"Right"}],
+    portals:[], edges:{left:2,right:1,top:14,bottom:15}},
     // Level 1 - Hell path
-    {respawn:{x:40,y:260}, blocks:[{x:0,y:300,w:640,h:60},{x:90,y:265,w:80,h:16},{x:220,y:245,w:80,h:16}],
-     voids:[{x:280,y:300,w:140,h:60}], spikes:[{x:150,y:292,w:30,h:8}],
-     blobs:[], portals:[{x:600,y:230,w:24,h:40,type:"hell"}],
-     edges:{left:0,right:0,top:16,bottom:17}},
+    {respawn:{x:40,y:260}, blocks:[
+        {x:0,y:300,w:640,h:60},{x:90,y:265,w:80,h:16},{x:220,y:245,w:80,h:16}
+    ],
+    voids:[{x:280,y:300,w:140,h:60}], spikes:[{x:150,y:292,w:30,h:8}],
+    blobs:[], portals:[{x:600,y:230,w:24,h:40,type:"hell"}],
+    edges:{left:0,right:0,top:16,bottom:17}},
     // Level 2 - Heaven path
-    {respawn:{x:40,y:260}, blocks:[{x:0,y:300,w:640,h:60},{x:90,y:270,w:80,h:16},{x:220,y:250,w:80,h:16},{x:350,y:230,w:80,h:16}],
-     voids:[], spikes:[{x:455,y:292,w:30,h:8}],
-     blobs:[], portals:[{x:580,y:230,w:24,h:40,type:"heaven"}],
-     edges:{left:0,right:0,top:18,bottom:19}},
+    {respawn:{x:40,y:260}, blocks:[
+        {x:0,y:300,w:640,h:60},{x:90,y:270,w:80,h:16},{x:220,y:250,w:80,h:16},{x:350,y:230,w:80,h:16}
+    ],
+    voids:[], spikes:[{x:455,y:292,w:30,h:8}],
+    blobs:[], portals:[{x:580,y:230,w:24,h:40,type:"heaven"}],
+    edges:{left:0,right:0,top:18,bottom:19}},
     // Level 3 - Human Obby
     {respawn:{x:40,y:260}, blocks:[
         {x:0,y:300,w:640,h:60},{x:120,y:270,w:90,h:16},{x:250,y:240,w:90,h:16},{x:380,y:210,w:90,h:16},
         {x:510,y:180,w:90,h:16},{x:560,y:120,w:60,h:16},{x:580,y:80,w:40,h:16}
     ],
-     voids:[{x:280,y:300,w:120,h:60}], spikes:[{x:360,y:292,w:30,h:8}],
-     blobs:[], portals:[{x:590,y:40,w:24,h:40,type:"human"}], edges:{left:6,right:6,top:6,bottom:6}}
+    voids:[{x:280,y:300,w:120,h:60}], spikes:[{x:360,y:292,w:30,h:8}],
+    blobs:[], portals:[{x:590,y:40,w:24,h:40,type:"human"}], edges:{left:6,right:6,top:6,bottom:6}}
 ];
 
 let activeBlob = null;
 let blobChoice = 0;
 
 // Input
-addEventListener("keydown", e => {
-    keys[e.code] = true;
+addEventListener("keydown", e=>{
+    keys[e.code]=true;
     if(state==="intro" && e.code==="Space"){ state="play"; resetToLevel(0); }
     if(e.code==="Space") jump = true;
     if(state==="blob"){
@@ -90,47 +95,36 @@ addEventListener("keydown", e => {
         if(e.code==="Escape"){ state="play"; blobChoice=0; activeBlob=null; }
     }
 });
-addEventListener("keyup", e => keys[e.code]=false);
+addEventListener("keyup", e=>keys[e.code]=false);
 
 // Update
 function update(){
     if(state!=="play") return;
     const L = levels[level];
+    if(keys["KeyA"]) player.x-=2;
+    if(keys["KeyD"]) player.x+=2;
 
-    // Movement
-    if(keys["KeyA"]) player.x -= 2;
-    if(keys["KeyD"]) player.x += 2;
+    player.vy+=GRAVITY;
+    player.y+=player.vy;
+    player.onGround=false;
 
-    // Gravity
-    player.vy += GRAVITY;
-    player.y += player.vy;
-    player.onGround = false;
-
-    // Collisions
     for(const b of L.blocks){
         if(hit(player,b)){
             if(player.vy>=0 && player.y+player.h-player.vy<=b.y+5){
-                player.y = b.y - player.h;
-                player.vy = 0;
-                player.onGround = true;
-                respawn.x = player.x; respawn.y = player.y;
+                player.y=b.y-player.h;
+                player.vy=0;
+                player.onGround=true;
+                respawn.x=player.x; respawn.y=player.y;
             }
         }
     }
 
-    if(jump && player.onGround) player.vy = -9;
+    if(jump && player.onGround) player.vy=-9;
     jump=false;
 
-    // Voids
     for(const v of L.voids) if(hit(player,v)) respawnHere();
-
-    // Spikes
     for(const s of L.spikes) if(hit(player,s)) resetToLevel(0);
-
-    // Blobs
-    for(const bl of L.blobs) if(hit(player,bl)) { state="blob"; activeBlob=bl; blobChoice=0; return; }
-
-    // Portals
+    for(const bl of L.blobs) if(hit(player,bl)) {state="blob"; activeBlob=bl; blobChoice=0; return;}
     for(const p of L.portals) if(hit(player,p)){
         if(p.type==="heaven") state="heaven";
         if(p.type==="hell") state="hell";
@@ -139,7 +133,6 @@ function update(){
         return;
     }
 
-    // Edges
     if(L.edges){
         if(player.x+player.w<0){ resetToLevel(L.edges.left); player.x=canvas.width-40; return; }
         if(player.x>canvas.width){ resetToLevel(L.edges.right); player.x=40; return; }
@@ -160,10 +153,8 @@ function updateBlob(){
 // Draw helpers
 function drawGlowRect(x,y,w,h,fill,glow){
     ctx.save();
-    ctx.shadowBlur = glow;
-    ctx.shadowColor = fill;
-    ctx.fillStyle = fill;
-    ctx.fillRect(x,y,w,h);
+    ctx.shadowBlur=glow; ctx.shadowColor=fill;
+    ctx.fillStyle=fill; ctx.fillRect(x,y,w,h);
     ctx.restore();
 }
 
@@ -171,7 +162,7 @@ function drawSpikes(s){
     ctx.save();
     ctx.fillStyle="#ff3b3b";
     ctx.shadowBlur=10; ctx.shadowColor="#ff3b3b";
-    const n = Math.max(1,Math.floor(s.w/6));
+    const n=Math.max(1,Math.floor(s.w/6));
     for(let i=0;i<n;i++){
         const px=s.x+i*6;
         ctx.beginPath();
@@ -278,8 +269,7 @@ function draw(){
 
     // Draw gameplay
     const L = levels[level];
-    ctx.fillStyle="#0b0b16"; ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle="#555"; // Platforms visible
+    ctx.fillStyle="#fff"; // Platforms
     for(const b of L.blocks) ctx.fillRect(b.x,b.y,b.w,b.h);
     ctx.fillStyle="#222"; // voids
     for(const v of L.voids) ctx.fillRect(v.x,v.y,v.w,v.h);
